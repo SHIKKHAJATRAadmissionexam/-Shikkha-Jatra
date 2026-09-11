@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ভার্সিটি 'খ' মডেল টেস্ট - ডিজিটাল OMR</title>
+    <style>
+        :root {
+            --primary: #d32f2f;
+            --primary-dark: #b71c1c;
+            --correct: #2e7d32;
+            --wrong: #c62828;
+            --telegram: #0088cc;
+            --telegram-dark: #006699;
+            --bg: #f4f6f9;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: var(--bg); color: #333; position: relative; min-height: 100vh; }
+
+        /* Background Watermark */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 320px;
+            height: 320px;
+            background-image: url('https://i.ibb.co.com/hFghg0hT/file-0000000070ec81fa8dafc95417eee3fb.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 0.12;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 8px 15px;
+            font-size: 17px;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .header-brand { display: flex; align-items: center; gap: 10px; }
+        .header-logo {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: #fff;
+            object-fit: cover;
+            border: 2px solid #fff;
+            flex-shrink: 0;
+        }
+
+        .container { max-width: 1200px; margin: 15px auto; padding: 0 10px; position: relative; z-index: 1; }
+        .card { background: rgba(255, 255, 255, 0.95); border-radius: 10px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 15px; }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+        .btn:hover { background: var(--primary-dark); }
+        .btn-success { background: #28a745; }
+        .btn-secondary { background: #6c757d; }
+        .btn-telegram { background: var(--telegram); }
+        .btn-toggle {
+            background: #e2e8f0;
+            color: #2d3748;
+            padding: 6px 12px;
+            font-size: 13px;
+            border-radius: 4px;
+            border: 1px solid #cbd5e0;
+            cursor: pointer;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: inline-block;
+            width: auto;
+        }
+
+        /* Independent Scroll Layout */
+        .exam-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            height: calc(100vh - 90px);
+        }
+
+        @media (min-width: 768px) {
+            .exam-container {
+                display: grid;
+                grid-template-columns: 1.2fr 0.8fr;
+            }
+        }
+
+        @media (max-width: 767px) {
+            .question-panel {
+                height: 52vh !important;
+            }
+            .omr-panel {
+                height: 38vh !important;
+            }
+        }
+
+        .question-panel {
+            background: rgba(255, 255, 255, 0.93);
+            border-radius: 8px;
+            padding: 15px;
+            overflow-y: auto;
+            max-height: 100%;
+            -webkit-overflow-scrolling: touch;
+            transition: all 0.3s ease;
+        }
+
+        .q-section-header {
+            background: #e2e8f0;
+            color: #1a202c;
+            padding: 6px 10px;
+            font-weight: bold;
+            font-size: 15px;
+            border-radius: 4px;
+            margin: 15px 0 10px 0;
+            border-left: 4px solid var(--primary);
+        }
+
+        .q-card {
+            background: #f8f9fa;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 12px;
+        }
+        .q-title {
+            font-weight: 600;
+            font-size: 15px;
+            color: #1a202c;
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        .q-options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 12px;
+            font-size: 14px;
+            color: #4a5568;
+        }
+        @media (max-width: 480px) {
+            .q-options-grid { grid-template-columns: 1fr; }
+        }
+
+        .omr-panel {
+            background: rgba(255, 255, 255, 0.93);
+            border-radius: 8px;
+            overflow-y: auto;
+            max-height: 100%;
+            padding: 15px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .subject-title {
+            background: var(--primary);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            font-size: 15px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .omr-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .q-num { font-weight: bold; width: 35px; font-size: 14px; }
+        .options { display: flex; gap: 10px; }
+
+        .bubble {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid #555;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            user-select: none;
+            background: white;
+        }
+        .bubble.selected { background: #333; color: white; border-color: #333; }
+        .bubble.disabled { cursor: not-allowed; opacity: 0.8; }
+
+        .bubble.correct-ans { background: var(--correct) !important; color: white !important; border-color: var(--correct) !important; }
+        .bubble.wrong-ans { background: var(--wrong) !important; color: white !important; border-color: var(--wrong) !important; }
+
+        .timer-badge {
+            background: white;
+            color: var(--primary);
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 15px;
+        }
+
+        /* Result Card Grid Styling */
+        .result-stats-box {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 20px 0;
+            background: #f8f9fa;
+            padding: 18px 10px;
+            border-radius: 10px;
+            border: 1px solid #edf2f7;
+        }
+        .stat-item {
+            flex: 1;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 26px;
+            font-weight: bold;
+            line-height: 1.2;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #4a5568;
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-brand">
+        <img src="https://i.ibb.co.com/hFghg0hT/file-0000000070ec81fa8dafc95417eee3fb.png" alt="Logo" class="header-logo">
+        <span>ভার্সিটি 'খ' মডেল টেস্ট</span>
+    </div>
+    <div id="timerContainer" class="hidden">
+        <span class="timer-badge">⏳ <span id="timer">45:00</span></span>
+    </div>
+</header>
+
+<div class="container">
+
+    <!-- STUDENT INSTRUCTION SCREEN -->
+    <div id="instructionPanel" class="card">
+        <h2 style="color: var(--primary); text-align: center; margin-bottom: 15px;">ভার্সিটি 'খ' মডেল টেস্ট - নির্দেশাবলী</h2>
+        <ul style="line-height: 1.8; margin-left: 20px; font-size: 15px;">
+            <li>এই পরীক্ষায় মোট <b>৬০টি</b> বহুনির্বাচনি প্রশ্ন (MCQ) রয়েছে।</li>
+            <li>বাংলা: <b>১৫টি (১-১৫)</b>, English: <b>১৫টি (১-১৫)</b>, সাধারণ জ্ঞান: <b>৩০টি (১-৩০)</b>।</li>
+            <li>পরীক্ষার মোট সময় <b>৪৫ মিনিট</b>। সময় শেষ হলে উত্তরপত্র স্বয়ংক্রিয়ভাবে জমা হয়ে যাবে।</li>
+            <li>প্রতিটি সঠিক উত্তরের জন্য <b>১ নম্বর</b> প্রদান করা হবে।</li>
+            <li>প্রতিটি ভুল উত্তরের জন্য <b>০.২৫ নম্বর</b> কাটা যাবে (Negative Marking: -0.25)।</li>
+            <li><b style="color: red;">সতর্কতা:</b> একটি অপশন একবার দাগানোর পর আর <b>পরিবর্তন করা যাবে না</b>।</li>
+            <li>প্রশ্নপত্র ও OMR শিট দুটি আলাদাভাবে স্বাধীনভাবে (independently) স্ক্রোল করতে পারবেন।</li>
+            <li style="margin-top: 8px;"><b>এইরকম আরও বেশি করে exam দিয়ে নিজেকে যাচাই করতে এখনই আমাদের telegram group এ যুক্ত হয়ে যাও telegram link: <a href="https://t.me/acsvarsitycourse" target="_blank" rel="noopener noreferrer" style="color: var(--telegram);">https://t.me/acsvarsitycourse</a></b></li>
+        </ul>
+        <button class="btn" onclick="startStudentExam()">Start Exam (পরীক্ষা শুরু করুন)</button>
+    </div>
+
+    <!-- EXAM SCREEN -->
+    <div id="examPanel" class="hidden">
+        <div class="exam-container">
+            <div class="question-panel card">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-weight: bold; color: var(--primary);">প্রশ্নপত্র</span>
+                    <button class="btn-toggle" id="toggleQBtn" onclick="toggleQuestionPanel()">➖ Minimise Questions</button>
+                </div>
+                <div id="questionBox"></div>
+            </div>
+            
+            <div class="omr-panel card">
+                <div class="subject-title">OMR Sheet</div>
+                <div id="studentOmrGrid"></div>
+                <button class="btn" onclick="submitExam(false)" style="margin-top: 20px;">Submit Exam (জমা দিন)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RESULT SCREEN -->
+    <div id="resultPanel" class="card hidden" style="text-align: center;">
+        <h2 style="color: var(--primary);">পরীক্ষার ফলাফল</h2>
+        <div style="font-size: 44px; font-weight: bold; margin: 15px 0; color: #222;" id="scoreDisplay">0 / 60</div>
+
+        <!-- Correct, Wrong, Skipped Card with Gap Layout -->
+        <div class="result-stats-box">
+            <div class="stat-item">
+                <div class="stat-number" style="color: var(--correct);" id="correctCnt">0</div>
+                <div class="stat-label">সঠিক</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" style="color: var(--wrong);" id="wrongCnt">0</div>
+                <div class="stat-label">ভুল</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" style="color: #6c757d;" id="skippedCnt">0</div>
+                <div class="stat-label">স্কিপ</div>
+            </div>
+        </div>
+
+        <a href="https://t.me/acsvarsitycourse" target="_blank" rel="noopener noreferrer" class="btn btn-telegram" style="margin-bottom: 12px;">
+            ✈️ টেলিগ্রাম গ্রুপে যুক্ত হোন (Telegram Group)
+        </a>
+
+        <div style="display: flex; gap: 10px;">
+            <button class="btn btn-success" onclick="reviewExam()">১. সঠিক উত্তর গুলি দেখুন</button>
+            <button class="btn btn-secondary" onclick="retakeExam()">২. পুনরায় পরীক্ষা দিন</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const TOTAL_QUESTIONS = 60;
+    const EXAM_MINUTES = 45;
+
+    const questionsData = [
+        // বাংলা (১ - ১৫)
+        { section: "বাংলা", q: "১. \"ইহার গতি সহজ, দীপ্তি নির্মল, সৌন্দর্যের শুচিতা অপূর্ব, ইহার কোনো জায়গায় কিছু জড়িমা নাই\"- আলোচ্য অংশটি কোন রচনার অন্তর্ভুক্ত?", opts: ["A. বিলাসী", "B. অপরিচিতা", "C. লালসালু", "D. মাসি-পিসি"] },
+        { q: "২. 'রেইনকোট' গল্পটিতে কলেজের জন্য কয়টি লোহার আলমারি কেনা হয়েছিল?", opts: ["A. ৫", "B. ৭", "C. ৮", "D. ১০"] },
+        { q: "৩. 'পাশরি' শব্দের অর্থ কী?", opts: ["A. ভুলে যাই", "B. সরে যাই", "C. গানের সুর", "D. পাশে থেকে"] },
+        { q: "৪. কবি সুফিয়া কামাল কোন সম্ভাষণে ভূষিত হয়েছেন?", opts: ["A. জননী", "B. নারী জাগরণের অগ্রদূত", "C. শহীদ জননী", "D. নারী আন্দোলনের পথিকৃৎ"] },
+        { q: "৫. অরণ্যে ঋষির আশ্রমকে বলে—", opts: ["A. তপোবন", "B. কুটির", "C. শান্তিনিকেতন", "D. আখড়া"] },
+        { q: "৬. 'লালসালু' উপন্যাসে কত বছর পর পর মাজারের গাত্রাবরণ বদলানো হয়?", opts: ["A. এক-দুই বছর", "B. দুই-তিন বছর", "C. তিন-চার বছর", "D. চার-পাঁচ বছর"] },
+        { q: "৭. নিচের কোন বানানটি সঠিক?", opts: ["A. জাজ্বল্যমান", "B. জাজ্বাল্যমান", "C. জ্বাজ্বল্যমান", "D. জাজ্বোল্যমান"] },
+        { q: "৮. \"শনিতে সাত মঙ্গলে তিন, আর সব দিন দিন\"— এটি কীসের উদাহরণ?", opts: ["A. প্রবাদ", "B. বাগধারা", "C. ডাক", "D. খনার বচন"] },
+        { q: "৯. 'বারেক' কোন সমাসের উদাহরণ?", opts: ["A. কর্মধারয়", "B. প্রাদি", "C. বহুব্রীহি", "D. দ্বিগু"] },
+        { q: "১০. 'নদী' শব্দের সঠিক উচ্চারণ কোনটি?", opts: ["A. নদী", "B. নোদী", "C. নোদি", "D. ণোদি"] },
+        { q: "১১. 'ভাত খাওয়া যে অন্নপাপ' — এখানে 'যে'—", opts: ["A. ক্রিয়াবিশেষণ", "B. সর্বনাম", "C. আবেগ শব্দ", "D. যোজক"] },
+        { q: "১২. \"কর্মের অনুরূপ ফল পাবে\"- বাক্যটিকে জটিল বাক্যে রূপান্তর করো।", opts: ["A. কর্ম করলে ফল পাবে।", "B. যেমন কর্ম করবে, তেমন ফল পাবে।", "C. কর্ম করবে এবং ফল পাবে।", "D. কর্ম করবে তবে অনুরূপ ফল পাবে।"] },
+        { q: "১৩. 'স্বল্প/অল্প চিহ্নিত করো' — বাক্যটিতে কোন যতিচিহ্নের ব্যবহার হয়েছে?", opts: ["A. ছেদ", "B. ইলেক", "C. লোপ", "D. বিকল্পচিহ্ন"] },
+        { q: "১৪. 'গৌরচন্দ্রিকা' বাগধারার সাথে অসংগতি রয়েছে—", opts: ["A. মুখবন্ধ", "B. ভূমিকা", "C. সমাপন", "D. প্রাককথন"] },
+        { q: "১৫. 'Mint' শব্দের পারিভাষিক অর্থ কী?", opts: ["A. বিযুক্ত", "B. টাঁকশাল", "C. বাতিল", "D. মধ্যগত"] },
+
+        // English (১ - ১৫)
+        { section: "English", q: "1. If I had known you were in town, I ______ you.", opts: ["A. could visit", "B. have visited", "C. would visit", "D. would have visited"] },
+        { q: "2. Which figure of speech has been used in the sentence, 'Death lays his icy hands on kings.'?", opts: ["A. Personification", "B. Simile", "C. Hyperbole", "D. Metaphor"] },
+        { q: "3. The author's argument is compelling ______ it lacks sufficient primary source documentation.", opts: ["A. provided that", "B. save that", "C. despite", "D. so far"] },
+        { q: "4. The professor's explanation was so ______ that even the most novice students could grasp the complex theory.", opts: ["A. obscure", "B. lucid", "C. ambiguous", "D. tedious"] },
+        { q: "5. Which of the following word is a synonym of the word 'Precariousness'?", opts: ["A. Uncertainty", "B. Abundant", "C. Soundness", "D. Valuable"] },
+        { q: "6. Choose the antonym of the word \"Deleterious\".", opts: ["A. Pernicious", "B. Beneficial", "C. Insidious", "D. Lethal"] },
+        { q: "7. The teachers of this school along with the Headmaster ______ the new building lately.", opts: ["A. inaugurated", "B. was inaugurated", "C. have inaugurated", "D. has inaugurated"] },
+        { q: "8. By the time Rafi ______ the university, most of the classes had already ended.", opts: ["A. reaches", "B. has reached", "C. reached", "D. had been reaching"] },
+        { q: "9. Choose the correctly spelt word.", opts: ["A. Embarrass", "B. Ocurrence", "C. Guarrantee", "D. Remmittance"] },
+        { q: "10. I was ______ the impression that you were ______ charge of this department.", opts: ["A. under, in", "B. with, at", "C. by, for", "D. in, on"] },
+        { q: "11. The phrase 'Rainy day' means-", opts: ["A. Preparing for a change in weather conditions", "B. Investing in agricultural projects", "C. Spending money only on essential goods", "D. Keeping money for a time of emergency"] },
+        { q: "12. Of the four books, the red/green one is the —.", opts: ["A. more cheaper", "B. cheapest", "C. cheap", "D. cheaper"] },
+        { q: "13. You will receive ______ SMS if you are eligible for ______ subject in B unit in ______ Dhaka University.", opts: ["A. no article/a/the", "B. a/a/no article", "C. an/no article/the", "D. an/a/no article"] },
+        { q: "14. What is the noun form of the word 'Pious'?", opts: ["A. Piousness", "B. Pious", "C. Piety", "D. Pity"] },
+        { q: "15. Which of the following statements isn't true?", opts: ["A. AI-powered educational tools can provide students with immediate feedback on their work.", "B. AI-powered educational tools can't replace the human and emotional support.", "C. AI tools can provide personalised learning experiences for students.", "D. Current AI-powered educational tools are full of creativity and originality."] },
+
+        // সাধারণ জ্ঞান (GK) (১ - ৩০)
+        { section: "সাধারণ জ্ঞান (GK)", q: "১. পৃথিবীর সর্বাধিক বৃষ্টিপাত হয় কোথায়?", opts: ["A. চেরাপুঞ্জি", "B. মৌসিনরাম", "C. আমাজান বনাঞ্চল", "D. মেকং অববাহিকা"] },
+        { q: "২. কোন রাষ্ট্রটি বঙ্গোপসাগরের উপকূলবর্তী নয়?", opts: ["A. শ্রীলংকা", "B. ভারত", "C. পাকিস্তান", "D. থাইল্যান্ড"] },
+        { q: "৩. SANA কোন দেশের সংবাদ সংস্থা?", opts: ["A. ইয়েমেন", "B. লিবিয়া", "C. সিরিয়া", "D. ইরান"] },
+        { q: "৪. নেপালের 'জেন-জি আন্দোলন' সংঘটিত করার ক্ষেত্রে কোন সামাজিক যোগাযোগ মাধ্যম ব্যবহার হয়েছিল?", opts: ["A. ফেসবুক", "B. টুইটার", "C. ডিসকর্ড", "D. হোয়াটসঅ্যাপ"] },
+        { q: "৫. নিচের যে ব্যক্তি চ্যান্সেলর অব এক্সচেকার নামে পরিচিত হন-", opts: ["A. জার্মানির প্রধানমন্ত্রী", "B. ব্রিটেনের অর্থমন্ত্রী", "C. অস্ট্রিয়ার রাষ্ট্রপতি", "D. ফ্রান্সের পর্যটনমন্ত্রী"] },
+        { q: "৬. কোনটি মিশরীয় সভ্যতার অবদান?", opts: ["A. চাকার আবিষ্কার", "B. পঞ্জিকার প্রচলন", "C. সপ্তাহকে ৭ দিনে ভাগ", "D. ৩৬৫ দিনে বছর গণনা"] },
+        { q: "৭. সার্কভুক্ত কয়টি দেশের সমুদ্রবন্দর নেই?", opts: ["A. ৩টি", "B. ৪টি", "C. ২টি", "D. ১টি"] },
+        { q: "৮. ভৌগোলিকভাবে রাশিয়ার ইউরোপ অংশ ও এশিয়া অংশকে বিভক্ত করেছে কোন পর্বতমালা?", opts: ["A. আল্পস পর্বতমালা", "B. ককেশীয় পর্বতমালা", "C. রকি পর্বতমালা", "D. ইউরাল পর্বতমালা"] },
+        { q: "৯. E-8 সংস্থার সাথে সম্পর্কিত কোনটি?", opts: ["A. পরিবেশ দূষণকারী দেশসমূহের সংস্থা", "B. দ্বীপরাষ্ট্র সমূহের জলবায়ু সংস্থা", "C. উত্তর মহাসাগরের তীরবর্তী দেশগুলোর জোট", "D. ইউরোপীয় ইউনিয়নের স্থলবেষ্টিত দেশগুলোর জোট"] },
+        { q: "১০. তেল সংকট-পরবর্তী বৈশ্বিক অর্থনৈতিক স্থিতিশীলতা নিশ্চিত করার লক্ষ্যে গঠিত অর্থনৈতিক জোট কোনটি?", opts: ["A. G7", "B. IMF", "C. WTO", "D. OPEC"] },
+        { q: "১১. বিশ্বের প্রথম জাতিসংঘ শান্তিরক্ষী বাহিনী কোনটি?", opts: ["A. UNOSOM", "B. UNMOGIP", "C. UNTSO", "D. UNEF I"] },
+        { q: "১২. একমাত্র সংস্থা হিসেবে সর্বোচ্চ তিন বার নোবেল পুরস্কার পেয়েছে-", opts: ["A. হিউম্যান রাইটস ওয়াচ", "B. রোটারী ইন্টারন্যাশনাল", "C. রেডক্রস", "D. অ্যামনেস্টি ইন্টারন্যাশনাল"] },
+        { q: "১৩. কোন দেশটি Alliance of Sahel States-এর সদস্য নয়?", opts: ["A. বুরকিনা ফাসো", "B. নাইজার", "C. মালি", "D. চাদ"] },
+        { q: "১৪. আন্তর্জাতিক বিচারব্যবস্থার কেন্দ্রবিন্দু কোন শহর?", opts: ["A. জেনেভা", "B. ভিয়েনা", "C. হেগ", "D. নিউইয়র্ক"] },
+        { q: "১৫. রাজা তৃতীয় চার্লস কোন দেশের রাষ্ট্রপ্রধান?", opts: ["A. যুক্তরাজ্য", "B. জ্যামাইকা", "C. গ্রানাডা", "D. সবগুলো"] },
+        { q: "১৬. রাশিয়া থেকে ক্রিমিয়া উপদ্বীপকে পৃথক করেছে-", opts: ["A. বসফরাস প্রণালি", "B. কার্চ প্রণালি", "C. দার্দানেলিস প্রণালি", "D. ডোভার প্রণালি"] },
+        { q: "১৭. MIGA -কোন আন্তর্জাতিক আর্থিক প্রতিষ্ঠানের অংশ?", opts: ["A. World Bank", "B. International Monetary Fund", "C. Islamic Development Bank", "D. Asian Infrastructure Investment Bank"] },
+        { q: "১৮. কোন দেশের সাথে সাভাক (SAVAK) গোয়েন্দা সংস্থা সম্পর্কিত ছিল?", opts: ["A. ইরান", "B. আলবেনিয়া", "C. জর্জিয়া", "D. তুরস্ক"] },
+        { q: "১৯. পেরেজিল দ্বীপের অবস্থান-", opts: ["A. পারস্য উপসাগরে", "B. দক্ষিণ চীন সাগরে", "C. জিব্রাল্টার প্রণালিতে", "D. কৃষ্ণ সাগরে"] },
+        { q: "২০. P5+1 চুক্তিতে 1 কোন দেশকে নির্দেশ করে?", opts: ["A. ইরান", "B. জার্মানি", "C. জাপান", "D. চীন"] },
+        { q: "২১. 'দারিদ্র্যের দুষ্টচক্র' তত্ত্বের প্রবক্তা কে?", opts: ["A. র‍্যাগনার ফ্রিশ", "B. র‍্যাগনার নার্কস", "C. অমর্ত্য সেন", "D. অভিজিৎ বন্দ্যোপাধ্যায়"] },
+        { q: "২২. কোন চলচ্চিত্রটি চে গুয়েভারার জীবন এবং অভিজ্ঞতাকে কেন্দ্র করে নির্মিত?", opts: ["A. The Motorcycle Diaries", "B. Why I am an Atheist", "C. Evita", "D. The Last Revolutionary"] },
+        { q: "২৩. দক্ষিণ আমেরিকার সর্বাধিক প্রচলিত ভাষা কোনটি?", opts: ["A. পর্তুগিজ", "B. ল্যাটিন", "C. স্প্যানিশ", "D. ডাচ"] },
+        { q: "২৪. জাতিসংঘের টেকসই উন্নয়ন লক্ষ্যমাত্রার ১৩তম লক্ষ্যমাত্রা হচ্ছে-", opts: ["A. জলবায়ু কার্যক্রম", "B. ক্ষুধা মুক্তি", "C. মানসম্মত শিক্ষা", "D. জলজ জীবন"] },
+        { q: "২৫. পৃথিবীর সর্ববৃহৎ রাষ্ট্রহীন জনগোষ্ঠী কুর্দিদের বসবাস নেই কোন দেশে?", opts: ["A. লেবানন", "B. ইরাক", "C. সিরিয়া", "D. তুরস্ক"] },
+        { q: "২৬. পোপ ফ্রান্সিস এর আত্মজীবনীমূলক গ্রন্থের নাম কী?", opts: ["A. হোফ: দ্য অটোবায়োগ্রাফি", "B. মাই লাইফ জার্নি", "C. হোফ: দ্য পোপ ফ্রান্সিস", "D. দ্য জার্নি টু ভ্যাটিকান সিটি"] },
+        { q: "২৭. কোন প্রতিযোগিতাকে 'Greatest Show on Earth' হিসেবে আখ্যায়িত করা হয়?", opts: ["A. অলিম্পিক গেমস", "B. কোপা আমেরিকা", "C. ফিফা বিশ্বকাপ", "D. এল ক্লাসিকো"] },
+        { q: "২৮. সর্ববৃহৎ এলাকা জুড়ে কোন নেটওয়ার্ক তৈরি করা হয়?", opts: ["A. PAN", "B. LAN", "C. MAN", "D. WAN"] },
+        { q: "২৯. বিশ্ব অর্থনীতিতে 'পেপার গোল্ড (Paper Gold)' বলতে কী বোঝায়?", opts: ["A. বিশ্বব্যাংকের সুবিধালাভ", "B. বিশেষ উত্তোলন অধিকার", "C. স্বর্ণের মানসম্পন্ন ভিত্তিতে মুদ্রা", "D. ঘাটতিপূর্ণ অর্থায়ন"] },
+        { q: "৩০. 'দ্য পটেটো ইটার্স' চিত্রকর্মটি কার আঁকা?", opts: ["A. মাইকেল এঞ্জেলো", "B. ভিনসেন্ট ভ্যানগগ", "C. ক্লোদ মনে", "D. পাবলো পিকাসো"] }
+    ];
+
+    const correctAnswers = {
+        // বাংলা (1-15)
+        "Q_1": "B", "Q_2": "D", "Q_3": "A", "Q_4": "A", "Q_5": "A",
+        "Q_6": "B", "Q_7": "A", "Q_8": "D", "Q_9": "A", "Q_10": "C",
+        "Q_11": "A", "Q_12": "B", "Q_13": "D", "Q_14": "C", "Q_15": "B",
+
+        // English (16-30)
+        "Q_16": "D", "Q_17": "A", "Q_18": "B", "Q_19": "B", "Q_20": "A",
+        "Q_21": "B", "Q_22": "C", "Q_23": "C", "Q_24": "A", "Q_25": "A",
+        "Q_26": "D", "Q_27": "B", "Q_28": "D", "Q_29": "C", "Q_30": "D",
+
+        // GK (31-60)
+        "Q_31": "B", "Q_32": "C", "Q_33": "C", "Q_34": "C", "Q_35": "B",
+        "Q_36": "D", "Q_37": "A", "Q_38": "D", "Q_39": "A", "Q_40": "A",
+        "Q_41": "C", "Q_42": "C", "Q_43": "D", "Q_44": "C", "Q_45": "D",
+        "Q_46": "B", "Q_47": "A", "Q_48": "A", "Q_49": "C", "Q_50": "B",
+        "Q_51": "B", "Q_52": "A", "Q_53": "C", "Q_54": "A", "Q_55": "A",
+        "Q_56": "A", "Q_57": "C", "Q_58": "D", "Q_59": "B", "Q_60": "B"
+    };
+
+    let userAnswers = {};
+    let timerId = null;
+    let isReviewMode = false;
+    let isQMinimized = false;
+
+    function renderQuestions() {
+        const qBox = document.getElementById('questionBox');
+        let html = '';
+        questionsData.forEach((item) => {
+            if (item.section) {
+                html += `<div class="q-section-header">${item.section}</div>`;
+            }
+            html += `
+                <div class="q-card">
+                    <div class="q-title">${item.q}</div>
+                    <div class="q-options-grid">
+                        ${item.opts.map(opt => `<div>${opt}</div>`).join('')}
+                    </div>
+                </div>
+            `;
+        });
+        qBox.innerHTML = html;
+    }
+
+    function toggleQuestionPanel() {
+        const qBox = document.getElementById('questionBox');
+        const btn = document.getElementById('toggleQBtn');
+        isQMinimized = !isQMinimized;
+        if (isQMinimized) {
+            qBox.classList.add('hidden');
+            btn.textContent = '➕ Expand Questions';
+        } else {
+            qBox.classList.remove('hidden');
+            btn.textContent = '➖ Minimise Questions';
+        }
+    }
+
+    function createOmrRow(key, displayNum) {
+        const selectedOpt = userAnswers[key];
+        return `
+        <div class="omr-row" id="row-${key}">
+            <span class="q-num">${displayNum}.</span>
+            <div class="options">
+                ${['A', 'B', 'C', 'D'].map(opt => {
+                    const isSel = selectedOpt === opt;
+                    const isDisabled = !!selectedOpt;
+                    return `
+                    <div class="bubble ${isSel ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}" 
+                         onclick="handleBubbleClick('${key}', '${opt}', this)">
+                        ${opt}
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>`;
+    }
+
+    function renderStudentOmr() {
+        let html = '';
+
+        // বাংলা (১-১৫)
+        html += `<div class="q-section-header" style="margin-top:0;">বাংলা (১-১৫)</div>`;
+        for (let i = 1; i <= 15; i++) {
+            html += createOmrRow(`Q_${i}`, i);
+        }
+
+        // English (১-১৫)
+        html += `<div class="q-section-header">English (১-১৫)</div>`;
+        for (let i = 16; i <= 30; i++) {
+            html += createOmrRow(`Q_${i}`, i - 15);
+        }
+
+        // সাধারণ জ্ঞান (১-৩০)
+        html += `<div class="q-section-header">সাধারণ জ্ঞান (১-৩০)</div>`;
+        for (let i = 31; i <= 60; i++) {
+            html += createOmrRow(`Q_${i}`, i - 30);
+        }
+
+        document.getElementById('studentOmrGrid').innerHTML = html;
+    }
+
+    function handleBubbleClick(key, option, element) {
+        if (userAnswers[key] || isReviewMode) return;
+        userAnswers[key] = option;
+        element.classList.add('selected');
+
+        const parent = element.parentElement;
+        Array.from(parent.children).forEach(c => c.classList.add('disabled'));
+
+        localStorage.setItem('varsity_b_user_answers', JSON.stringify(userAnswers));
+    }
+
+    function startStudentExam() {
+        document.getElementById('instructionPanel').classList.add('hidden');
+        document.getElementById('examPanel').classList.remove('hidden');
+        document.getElementById('timerContainer').classList.remove('hidden');
+
+        renderQuestions();
+        
+        const savedAnswers = localStorage.getItem('varsity_b_user_answers');
+        if (savedAnswers) {
+            try { userAnswers = JSON.parse(savedAnswers); } catch(e) { userAnswers = {}; }
+        } else {
+            userAnswers = {};
+        }
+
+        isReviewMode = false;
+        renderStudentOmr();
+        startTimer(EXAM_MINUTES * 60);
+    }
+
+    function startTimer(seconds) {
+        clearInterval(timerId);
+        const timerDisp = document.getElementById('timer');
+
+        timerId = setInterval(() => {
+            let m = Math.floor(seconds / 60);
+            let s = seconds % 60;
+
+            m = m < 10 ? '0' + m : m;
+            s = s < 10 ? '0' + s : s;
+
+            timerDisp.textContent = `${m}:${s}`;
+
+            if (--seconds < 0) {
+                clearInterval(timerId);
+                alert('৪৫ মিনিট সময় শেষ! উত্তরপত্র জমা নেওয়া হলো।');
+                submitExam(true);
+            }
+        }, 1000);
+    }
+
+    function submitExam(autoSubmit = false) {
+        if (!autoSubmit && !confirm("আপনি কি নিশ্চিত যে উত্তরপত্র জমা দিতে চান?")) return;
+
+        clearInterval(timerId);
+        localStorage.removeItem('varsity_b_user_answers');
+        document.getElementById('timerContainer').classList.add('hidden');
+        document.getElementById('examPanel').classList.add('hidden');
+        document.getElementById('resultPanel').classList.remove('hidden');
+
+        calculateResults();
+    }
+
+    function calculateResults() {
+        let correct = 0;
+        let wrong = 0;
+        let skipped = 0;
+
+        for (let i = 1; i <= TOTAL_QUESTIONS; i++) {
+            const key = `Q_${i}`;
+            const user = userAnswers[key];
+            const right = correctAnswers[key];
+
+            let isCorrect = false;
+            if (Array.isArray(right)) {
+                isCorrect = right.includes(user);
+            } else {
+                isCorrect = (right === user);
+            }
+
+            if (!user) {
+                skipped++;
+            } else if (isCorrect) {
+                correct++;
+            } else {
+                wrong++;
+            }
+        }
+
+        const totalMark = (correct * 1.0) - (wrong * 0.25);
+
+        document.getElementById('scoreDisplay').textContent = `${totalMark.toFixed(2)} / ${TOTAL_QUESTIONS}`;
+        document.getElementById('correctCnt').textContent = correct;
+        document.getElementById('wrongCnt').textContent = wrong;
+        document.getElementById('skippedCnt').textContent = skipped;
+    }
+
+    function reviewExam() {
+        isReviewMode = true;
+        document.getElementById('resultPanel').classList.add('hidden');
+        document.getElementById('examPanel').classList.remove('hidden');
+
+        for (let i = 1; i <= TOTAL_QUESTIONS; i++) {
+            const key = `Q_${i}`;
+            const row = document.getElementById(`row-${key}`);
+            if (!row) continue;
+
+            const bubbles = row.querySelectorAll('.bubble');
+            const user = userAnswers[key];
+            const right = correctAnswers[key];
+
+            bubbles.forEach(b => {
+                const opt = b.textContent.trim();
+                b.classList.remove('selected', 'disabled');
+
+                let isRightOpt = false;
+                if (Array.isArray(right)) {
+                    isRightOpt = right.includes(opt);
+                } else {
+                    isRightOpt = (opt === right);
+                }
+
+                if (isRightOpt) {
+                    b.classList.add('correct-ans');
+                }
+                if (user && opt === user && !isRightOpt) {
+                    b.classList.add('wrong-ans');
+                }
+            });
+        }
+    }
+
+    function retakeExam() {
+        localStorage.removeItem('varsity_b_user_answers');
+        userAnswers = {};
+        document.getElementById('resultPanel').classList.add('hidden');
+        startStudentExam();
+    }
+</script>
+
+</body>
+              </html>
